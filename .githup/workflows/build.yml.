@@ -8,7 +8,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build with Buildozer
-        uses: EnasAnwar/buildozer-action@v1
+        uses: EnasAnwar/buildozer
+-action@v1
         with:
           buildozer_version: master
           python_version: 3.11
