@@ -39,7 +39,7 @@ android.minapi = 21
 # android.ndk = 25b
 
 # (list) Desteklenen mimariler (Actions için ikisini de eklemek iyidir)
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 
 # (bool) Kalıntıları temizle (GitHub Actions'ta True olması iyidir)
 warn_on_root = 1
