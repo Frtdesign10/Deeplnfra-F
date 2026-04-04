@@ -1,26 +1,22 @@
 from kivy.app import App
-from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
 
-class TestApp(App):
+class MainApp(App):
     def build(self):
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        layout = BoxLayout(orientation='vertical')
+        self.label = Label(text="Frt Design APK Build System", font_size='20sp')
         
-        # Bir başlık ekleyelim
-        self.label = Label(text="Frt Design APK Testi", font_size='24sp')
-        
-        # Bir buton ekleyelim
-        btn = Button(text="Tıkla Bakalım", size_hint=(1, 0.2))
-        btn.bind(on_press=self.on_button_click)
+        btn = Button(text="Test Connection", size_hint=(1, 0.2))
+        btn.bind(on_press=self.on_click)
         
         layout.add_widget(self.label)
         layout.add_widget(btn)
-        
         return layout
 
-    def on_button_click(self, instance):
-        self.label.text = "Kod Başarıyla Çalıştı!"
+    def on_click(self, instance):
+        self.label.text = "Status: Online & Working!"
 
 if __name__ == "__main__":
-    TestApp().run()
+    MainApp().run()
