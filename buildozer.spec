@@ -13,10 +13,10 @@ android.api = 33
 android.minapi = 21
 android.ndk_api = 21
 
-# Building only for arm64-v8a saves massive time and prevents crashes
+# Single architecture for faster and safer build
 android.archs = arm64-v8a
 
-# Mandatory for GitHub Actions
+# Required for GitHub Actions environment
 warn_on_root = 1
 
 [buildozer]
