@@ -8,7 +8,7 @@ class MainApp(App):
         layout = BoxLayout(orientation='vertical')
         self.label = Label(text="Frt Design APK Build System", font_size='20sp')
         
-        # Burada on_click ismini kullandık
+        # Connects the button to the on_click function
         btn = Button(text="Test Connection", size_hint=(1, 0.2))
         btn.bind(on_press=self.on_click)
         
@@ -16,7 +16,7 @@ class MainApp(App):
         layout.add_widget(btn)
         return layout
 
-    # Fonksiyonun ismi yukarıdakiyle aynı (on_click) olmalı
+    # This function must be named on_click
     def on_click(self, instance):
         self.label.text = "Status: Online & Working!"
 
