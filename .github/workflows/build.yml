@@ -21,7 +21,7 @@ jobs:
           pip install --user --upgrade buildozer cython virtualenv
 
       - name: Build with Buildozer
-        uses: EnasAnwar/buildozer-action@v1
+        uses: ArtemSerebrennikov/buildozer-action@v1
         with:
           buildozer_version: master
           python_version: 3.11
