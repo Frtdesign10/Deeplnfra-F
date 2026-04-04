@@ -22,10 +22,10 @@ jobs:
           pip install cython virtualenv buildozer
 
       - name: Build with Buildozer
-        # 'yes' komutunu daha güvenli bir şekilde boruluyoruz (Broken pipe hatası için)
         run: |
+          buildozer android clean
           export BUILDOZER_ALLOW_KIVY_REQS=1
-          stdbuf -oL buildozer -v android debug
+          yes | stdbuf -oL buildozer -v android debug
         env:
           USER: root
 
