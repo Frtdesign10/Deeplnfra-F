@@ -1,52 +1,25 @@
 [app]
-# (str) Uygulama başlığı
-title = My Kivy App
-
-# (str) Paket adı
-package.name = frtdesignapp
-
-# (str) Paket domaini
-package.domain = org.frtdesign
-
-# (str) Ana dosya konumu
+title = Frt Design App
+package.name = frtdesign
+package.domain = org.frt
 source.dir = .
-
-# (list) Dahil edilecek dosyalar (uzantılara dikkat)
 source.include_exts = py,png,jpg,kv,atlas
-
-# (str) Uygulama versiyonu
 version = 0.1
-
-# (list) Uygulama gereksinimleri (Kivy sürümü belirtmeye gerek yok, en günceli çeker)
 requirements = python3,kivy
-
-# (str) Desteklenen ekran yönü
 orientation = portrait
-
-# (bool) Tam ekran modu
 fullscreen = 0
-
-# (list) Android izinleri
 android.permissions = INTERNET
-
-# (int) Android API seviyesi (33 veya 34 önerilir)
 android.api = 33
-
-# (int) Minimum API seviyesi
 android.minapi = 21
+android.ndk_api = 21
 
-# (str) Android NDK sürümü (Genellikle otomatik seçilir ama gerekirse belirtilir)
-# android.ndk = 25b
-
-# (list) Desteklenen mimariler (Actions için ikisini de eklemek iyidir)
+# Building only for arm64-v8a saves massive time and prevents crashes
 android.archs = arm64-v8a
 
-# (bool) Kalıntıları temizle (GitHub Actions'ta True olması iyidir)
+# Mandatory for GitHub Actions
 warn_on_root = 1
 
 [buildozer]
-# (int) Log seviyesi (Hata ayıklama için 2 kalsın)
 log_level = 2
-
-# (int) Çıktı klasörü (YAML dosyanla uyumlu olmalı)
+warn_on_root = 1
 bin_dir = ./bin
