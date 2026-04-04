@@ -17,14 +17,15 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # libtinfo5 yerine libtinfo6 veya sadece gerekli olanları kuruyoruz
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
           pip install --upgrade pip
           pip install cython virtualenv buildozer
 
       - name: Build with Buildozer
+        # 'yes' komutunu daha güvenli bir şekilde boruluyoruz (Broken pipe hatası için)
         run: |
-          yes | buildozer android debug
+          export BUILDOZER_ALLOW_KIVY_REQS=1
+          stdbuf -oL buildozer -v android debug
         env:
           USER: root
 
