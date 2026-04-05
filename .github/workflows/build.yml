@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    # We are using 22.04 because 24.04 has library compatibility issues with libffi/libtool
     runs-on: ubuntu-22.04
 
     steps:
@@ -23,18 +22,19 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Standard Kivy/Buildozer dependencies plus specific build tools to fix Autoconf/Libtool error
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev m4
+          # Mandatory fix for the macro error:
+          sudo ln -s /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 || true
+          sudo ln -s /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 || true
           pip3 install --upgrade pip
           pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          # Create buildozer directory and accept all licenses automatically
           mkdir -p .buildozer
+          # Using "yes |" to skip all license prompts
           yes | buildozer -v android debug
         env:
-          # This helps with potential download/timeout issues
           PYTHONUNBUFFERED: 1
 
       - name: Upload APK Artifact
