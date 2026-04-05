@@ -1,6 +1,6 @@
 [app]
-title = Frt Design App
-package.name = frtdesign
+title = FrtApp
+package.name = frtapp
 package.domain = org.frt
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
@@ -12,11 +12,7 @@ android.permissions = INTERNET
 android.api = 33
 android.minapi = 21
 android.ndk_api = 21
-
-# Single architecture for faster and safer build
 android.archs = arm64-v8a
-
-# Required for GitHub Actions environment
 warn_on_root = 1
 
 [buildozer]
