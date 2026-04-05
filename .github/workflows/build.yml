@@ -8,7 +8,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Changed to ubuntu-22.04 for better compatibility with Buildozer and NDK
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -22,14 +23,14 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Install all necessary tools to resolve Autoreconf and Libtool errors:
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev m4
+          # Comprehensive list of dependencies for Ubuntu 22.04
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev m4
           pip3 install --upgrade pip
           pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          # Automatically accept SDK and NDK licenses and start the build process
+          # The "yes |" part automatically handles license agreements
           yes | buildozer -v android debug
           
       - name: Upload APK Artifact
