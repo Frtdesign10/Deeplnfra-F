@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    # We are using 22.04 because 24.04 has library compatibility issues with libffi/libtool
     runs-on: ubuntu-22.04
 
     steps:
@@ -22,21 +23,19 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
+          # Standard Kivy/Buildozer dependencies plus specific build tools to fix Autoconf/Libtool error
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev m4
           pip3 install --upgrade pip
           pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          # Create the .buildozer directory to avoid permission issues
+          # Create buildozer directory and accept all licenses automatically
           mkdir -p .buildozer
-          # The "yes |" accepts all SDK/NDK licenses automatically
-          # Setting the log_level to 2 provides more detail if it fails
           yes | buildozer -v android debug
         env:
-          # Use the pre-installed SDK/NDK paths to avoid "Broken pipe" download issues
-          ANDROID_SDK_ROOT: ${{ vars.ANDROID_SDK_ROOT }}
-          ANDROID_NDK_ROOT: ${{ vars.ANDROID_NDK_ROOT }}
+          # This helps with potential download/timeout issues
+          PYTHONUNBUFFERED: 1
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
