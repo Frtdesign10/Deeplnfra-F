@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-    # Changed to ubuntu-22.04 for better compatibility with Buildozer and NDK
     runs-on: ubuntu-22.04
 
     steps:
@@ -23,16 +22,22 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Comprehensive list of dependencies for Ubuntu 22.04
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev m4
           pip3 install --upgrade pip
           pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          # The "yes |" part automatically handles license agreements
+          # Create the .buildozer directory to avoid permission issues
+          mkdir -p .buildozer
+          # The "yes |" accepts all SDK/NDK licenses automatically
+          # Setting the log_level to 2 provides more detail if it fails
           yes | buildozer -v android debug
-          
+        env:
+          # Use the pre-installed SDK/NDK paths to avoid "Broken pipe" download issues
+          ANDROID_SDK_ROOT: ${{ vars.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_ROOT: ${{ vars.ANDROID_NDK_ROOT }}
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
