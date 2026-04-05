@@ -22,14 +22,14 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt update
-          # Updated libtinfo5 to libtinfo6 for newer Ubuntu runners
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
+          # Install all necessary tools to resolve Autoreconf and Libtool errors:
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev m4
           pip3 install --upgrade pip
           pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          # This command accepts all SDK/NDK licenses automatically
+          # Automatically accept SDK and NDK licenses and start the build process
           yes | buildozer -v android debug
           
       - name: Upload APK Artifact
