@@ -1,5 +1,10 @@
-name: Build APK
-on: [push, pull_request]
+name: Android Build with Buildozer
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -10,28 +15,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          pip install --user --upgrade buildozer
-          pip install --user --upgrade
-          Cython==0.29.33
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          # Fixed: Added specific packages to prevent "at least one requirement" error
+          pip3 install --upgrade pip
+          pip3 install buildozer Cython==0.29.33 wheel
 
       - name: Build with Buildozer
         run: |
-          buildozer android clean
-          export BUILDOZER_ALLOW_KIVY_REQS=1
-          yes | stdbuf -oL buildozer -v android debug
-        env:
-          USER: root
-
-      - name: Upload APK
+          # The "yes |" prefix automatically accepts Android SDK/NDK licenses
+          yes | buildozer -v android debug
+          
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: my-app-package
+          name: FrtApp-debug-apk
           path: bin/*.apk
