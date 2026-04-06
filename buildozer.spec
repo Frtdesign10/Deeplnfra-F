@@ -9,10 +9,10 @@ requirements = python3,kivy==2.3.0,kivymd,pillow
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET
-android.api = 34
+android.api = 33
 android.minapi = 21
 android.ndk_api = 21
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 warn_on_root = 1
 p4a.branch = master
 [buildozer]
