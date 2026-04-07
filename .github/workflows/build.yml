@@ -23,7 +23,8 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          buildozer android clean
+          # Eğer klasör varsa temizle, yoksa hata verme (Hatanın çözümü burası)
+          if [ -d ".buildozer" ]; then buildozer android clean; fi
           export BUILDOZER_ALLOW_KIVY_REQS=1
           yes | buildozer -v android debug
         env:
