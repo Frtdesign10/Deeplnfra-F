@@ -1,44 +1,37 @@
-name: Android Build with Buildozer
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+name: Build APK
+on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install System Dependencies
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev m4
-          # Mandatory fix for the macro error:
-          sudo ln -s /usr/share/aclocal/libtool.m4 /usr/share/aclocal/ltoptions.m4 || true
-          sudo ln -s /usr/share/aclocal/ltsugar.m4 /usr/share/aclocal/ltversion.m4 || true
-          pip3 install --upgrade pip
-          pip3 install buildozer Cython==0.29.33 wheel
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          pip install --upgrade pip
+          pip install cython==0.29.33 virtualenv buildozer
 
       - name: Build with Buildozer
         run: |
-          mkdir -p .buildozer
-          # Using "yes |" to skip all license prompts
+          buildozer android clean
+          export BUILDOZER_ALLOW_KIVY_REQS=1
           yes | buildozer -v android debug
         env:
-          PYTHONUNBUFFERED: 1
+          USER: root
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrtApp-debug-apk
+          name: frt-design-package
           path: bin/*.apk
+          
