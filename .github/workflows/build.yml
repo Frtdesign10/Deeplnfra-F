@@ -12,20 +12,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10' # En stabil sürüm
 
       - name: Install System Dependencies
         run: |
           sudo apt update
+          # Autoconf hatalarını çözmek için eksik araçları ekledik
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev ant
           pip install --upgrade pip
           pip install cython==0.29.33 virtualenv buildozer
 
       - name: Build with Buildozer
         run: |
-          # Temizleme hatasını (FileNotFound) bu satırla kesin çözüyoruz
-          [ -d ".buildozer" ] && buildozer android clean || echo "No buildozer dir to clean"
+          # Klasör hatalarını önlemek için güvenli temizlik
+          rm -rf .buildozer/android/platform/python-for-android
           export BUILDOZER_ALLOW_KIVY_REQS=1
+          # Hata ayıklama modunda (verbose) çalıştır
           yes | buildozer -v android debug
         env:
           USER: root
@@ -33,6 +35,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FrtDesign-APK
+          name: FrtDesign-Final-APK
           path: bin/*.apk
           
