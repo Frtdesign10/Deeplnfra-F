@@ -5,13 +5,9 @@ package.domain = org.frt
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
-
-# Sadece gerekli olanları bıraktık
+# Pydroid'de çalışan kütüphaneler
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow
-
 orientation = portrait
-fullscreen = 0
-android.permissions = INTERNET
 android.api = 33
 android.minapi = 21
 android.ndk_api = 21
