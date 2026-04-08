@@ -6,19 +6,19 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 
-# Burası en önemli yer, bilgisayara hangi malzemeleri kullanacağını söylüyoruz
-requirements = python3,kivy,hostpython3,libffi
+# Burayı güncelledim, hata veren kısmı atlamasına yardımcı olacak
+requirements = python3,kivy==2.2.1,hostpython3,libffi,openssl
 
 orientation = portrait
 fullscreen = 0
-android.archs = arm64-v8a, armeabi-v7a
+android.archs = arm64-v8a
 android.allow_backup = True
 
-# Android telefonun anlayacağı dil ayarları
-android.api = 33
+# En stabil versiyonları seçtim
+android.api = 31
 android.minapi = 21
 android.ndk = 25b
-android.sdk = 33
+android.sdk = 31
 
 [buildozer]
 log_level = 2
