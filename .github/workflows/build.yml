@@ -48,7 +48,8 @@ jobs:
       - name: pip baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
         run: |
           pip install --upgrade pip
-          pip install buildozer cython
+          pip install buildozer 
+          pip install "cython==0.29.37"
 
       - name: Buildozer Ã¶nbelleÄŸi
         uses: actions/cache@v4
