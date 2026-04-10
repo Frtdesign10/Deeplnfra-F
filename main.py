@@ -1,38 +1,41 @@
+
 from kivymd.app import MDApp
-from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.screen import MDScreen
 from kivymd.uix.button import MDRaisedButton
 from kivymd.uix.label import MDLabel
-from kivy.core.window import Window
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivy.lang import Builder
 
-class FrtDesignApp(MDApp):
+KV = """
+MDScreen:
+    MDBoxLayout:
+        orientation: "vertical"
+        padding: "20dp"
+        spacing: "12dp"
+
+        MDLabel:
+            text: "Merhaba KivyMD!"
+            halign: "center"
+            font_style: "H4"
+
+        MDRaisedButton:
+            text: "Tıkla"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.button_pressed()
+"""
+
+class MainApp(MDApp):
     def build(self):
         self.theme_cls.primary_palette = "Blue"
-        self.theme_cls.theme_style = "Dark"
-        
-        layout = MDBoxLayout(orientation='vertical', padding=20, spacing=20)
-        
-        self.status_label = MDLabel(
-            text="FRT DESIGN SYSTEM",
-            halign="center",
-            font_style="H4"
-        )
-        
-        btn = MDRaisedButton(
-            text="START CONNECTION TEST",
-            pos_hint={"center_x": .5},
-            on_release=self.on_button_click
-        )
-        
-        layout.add_widget(self.status_label)
-        layout.add_widget(btn)
-        return layout
+        self.theme_cls.theme_style = "Light"
+        return Builder.load_string(KV)
 
-    def on_button_click(self, instance):
-        self.status_label.text = "SYSTEM ONLINE"
-        self.status_label.text_color = (0, 1, 0, 1)
+    def button_pressed(self):
+        print("Butona tıklandı!")
 
 if __name__ == "__main__":
-    FrtDesignApp().run()
+    MainApp().run()
+
     
     
     
