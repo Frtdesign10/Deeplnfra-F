@@ -1,40 +1,74 @@
-name: Build APK
-on: [push, pull_request]
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Kodu Ã§ek
+        uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Python kur
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10' # En stabil sürüm
+          python-version: "3.10"
 
-      - name: Install System Dependencies
+      - name: Sistem baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
         run: |
-          sudo apt update
-          # Autoconf hatalarını çözmek için eksik araçları ekledik
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev ant
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip \
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            zlib1g-dev \
+            libgstreamer1.0 \
+            gstreamer1.0-plugins-base \
+            libgl1-mesa-dev \
+            autoconf \
+            automake \
+            libtool \
+            pkg-config \
+            zip \
+            unzip \
+            openjdk-17-jdk
+
+      - name: pip baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
+        run: |
           pip install --upgrade pip
-          pip install cython==0.29.33 virtualenv buildozer
+          pip install buildozer cython
 
-      - name: Build with Buildozer
-        run: |
-          # Klasör hatalarını önlemek için güvenli temizlik
-          rm -rf .buildozer/android/platform/python-for-android
-          export BUILDOZER_ALLOW_KIVY_REQS=1
-          # Hata ayıklama modunda (verbose) çalıştır
-          yes | buildozer -v android debug
-        env:
-          USER: root
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Buildozer Ã¶nbelleÄŸi
+        uses: actions/cache@v3
         with:
-          name: FrtDesign-Final-APK
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-
+
+      - name: Android APK derle
+        run: |
+          buildozer -v android debug
+
+      - name: APK dosyasÄ±nÄ± yÃ¼kle
+        uses: actions/upload-artifact@v3
+        with:
+          name: myapp-debug.apk
           path: bin/*.apk
           
