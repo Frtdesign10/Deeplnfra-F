@@ -1,24 +1,31 @@
 [app]
-title = FRT Design App
-package.name = frtdesign
-package.domain = org.frt
+title = MyApp
+package.name = myapp
+package.domain = org.myapp
+
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
-version = 0.1
 
-# Burayı güncelledim, hata veren kısmı atlamasına yardımcı olacak
-requirements = python3,kivy==2.2.1,hostpython3,libffi,openssl
+version = 1.0.0
+
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow
 
 orientation = portrait
-fullscreen = 0
-android.archs = arm64-v8a
-android.allow_backup = True
 
-# En stabil versiyonları seçtim
-android.api = 31
+osx.python_version = 3
+osx.kivy_version = 2.3.0
+
+fullscreen = 0
+
+android.permissions = INTERNET
+android.api = 33
 android.minapi = 21
 android.ndk = 25b
-android.sdk = 31
+android.ndk_api = 21
+android.accept_sdk_license = True
+android.archs = arm64-v8a, armeabi-v7a
+
+android.allow_backup = True
 
 [buildozer]
 log_level = 2
