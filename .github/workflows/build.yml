@@ -1,4 +1,4 @@
-name: Build Android APK
+ name: KOSTEBEK-AR Build
 
 on:
   push:
@@ -27,6 +27,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+
+      - name: Tarih bazlÄ± versiyon oluÅŸtur
+        run: |
+          VERSION=$(date +'%Y.%m.%d')
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Versiyon: $VERSION"
+          # buildozer.spec iÃ§indeki versiyonu otomatik gÃ¼ncelle
+          sed -i "s/^version = .*/version = $VERSION/" buildozer.spec
+          # main.py iÃ§indeki versiyon etiketini gÃ¼ncelle
+          sed -i "s/APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
 
       - name: Sistem baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
         run: |
@@ -60,6 +70,14 @@ jobs:
           pip install buildozer
           pip install "cython==0.29.37"
 
+      - name: JSON dosyasÄ±nÄ± kontrol et
+        run: |
+          if [ -f "kostebek_hatlar.json" ]; then
+            echo "kostebek_hatlar.json bulundu"
+          else
+            echo "UYARI: kostebek_hatlar.json bulunamadi!"
+          fi
+
       - name: Buildozer Ã¶nbelleÄŸi
         uses: actions/cache@v4
         with:
@@ -77,5 +95,5 @@ jobs:
       - name: APK dosyasÄ±nÄ± yÃ¼kle
         uses: actions/upload-artifact@v4
         with:
-          name: myapp-debug.apk
-          path: bin/*.apk          
+          name: kostebek-ar-${{ env.APP_VERSION }}.apk
+          path: bin/*.apk         
