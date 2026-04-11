@@ -1,33 +1,32 @@
 [app]
-title = MyApp
-package.name = myapp
-package.domain = org.myapp
+title = KOSTEBEK-AR
+package.name = kostebekar
+package.domain = org.frtdesign
 
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
+source.include_exts = py,png,jpg,kv,atlas,json
 
-version = 1.2
+version = 2026.04.12
 
-requirements = python3,kivy==2.2.1,kivymd==1.1.1,pillow,hostpython3,libffi,openssl,certifi
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,plyer
 
 orientation = portrait
 
-osx.python_version = 3
-osx.kivy_version = 2.3.0
-
 fullscreen = 0
 
-android.permissions = INTERNET
+android.permissions = INTERNET, CAMERA, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATIONS, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
+
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
 android.ndk_api = 21
 android.accept_sdk_license = True
 android.archs = arm64-v8a, armeabi-v7a
-
 android.allow_backup = True
+android.enable_androidx = True
+
+p4a.branch = develop
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
-p4a.branch = develop
