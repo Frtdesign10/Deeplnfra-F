@@ -10,9 +10,18 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+
     steps:
       - name: Kodu Ã§ek
         uses: actions/checkout@v4
+
+      - name: Java 17 kur
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -48,7 +57,7 @@ jobs:
       - name: pip baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
         run: |
           pip install --upgrade pip
-          pip install buildozer 
+          pip install buildozer
           pip install "cython==0.29.37"
 
       - name: Buildozer Ã¶nbelleÄŸi
@@ -69,5 +78,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: myapp-debug.apk
-          path: bin/*.apk
-          
+          path: bin/*.apk          
