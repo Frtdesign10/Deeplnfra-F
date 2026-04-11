@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "Ana Dogalgaz Hatti",
+    "type": "DOGALGAZ",
+    "company": "IGDAS",
+    "depth_cm": 150,
+    "pressure": "4 bar",
+    "year": 2008,
+    "coordinates": [
+      {"lat": 41.01500, "lon": 28.97900},
+      {"lat": 41.01500, "lon": 28.98200}
+    ],
+    "color": [0, 1, 1, 0.85],
+    "thickness": 8
+  },
+  {
+    "id": 2,
+    "name": "Su Ana Boru Hatti",
+    "type": "SU HATTI",
+    "company": "ISKI",
+    "depth_cm": 80,
+    "pressure": "2.5 bar",
+    "year": 2015,
+    "coordinates": [
+      {"lat": 41.01480, "lon": 28.98050},
+      {"lat": 41.01550, "lon": 28.98050}
+    ],
+    "color": [0.2, 0.5, 1, 0.85],
+    "thickness": 6
+  },
+  {
+    "id": 3,
+    "name": "Yuksek Gerilim Hatti",
+    "type": "ELEKTRIK",
+    "company": "BEDAS",
+    "depth_cm": 60,
+    "voltage": "380V",
+    "year": 2012,
+    "coordinates": [
+      {"lat": 41.01460, "lon": 28.97950},
+      {"lat": 41.01460, "lon": 28.98150}
+    ],
+    "color": [1, 0.85, 0, 0.85],
+    "thickness": 5
+  },
+  {
+    "id": 4,
+    "name": "Fiber Optik Omurga",
+    "type": "FIBER OPTIK",
+    "company": "TURK TELEKOM",
+    "depth_cm": 40,
+    "bandwidth": "10 Gbps",
+    "year": 2019,
+    "coordinates": [
+      {"lat": 41.01510, "lon": 28.97920},
+      {"lat": 41.01510, "lon": 28.98180}
+    ],
+    "color": [0.4, 1, 0.4, 0.85],
+    "thickness": 4
+  }
+]
