@@ -1,104 +1,6 @@
-OSTEBEK-AR Build
+name: KOSTEBEK-AR Build
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-
-    env:
-      JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-
-    steps:
-      - name: Kodu Ã§ek
-        uses: actions/checkout@v4
-
-      - name: Java 17 kur
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Python kur
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Tarih bazlÄ± versiyon oluÅŸtur
-        run: |
-          VERSION=$(date +'%Y.%m.%d')
-          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Versiyon: $VERSION"
-          # buildozer.spec iÃ§indeki versiyonu otomatik gÃ¼ncelle
-          sed -i "s/^version = .*/version = $VERSION/" buildozer.spec
-          # main.py iÃ§indeki versiyon etiketini gÃ¼ncelle
-          sed -i "s/APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
-
-      - name: Sistem baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            zlib1g-dev \
-            libgl1-mesa-dev \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            zip \
-            unzip \
-            openjdk-17-jdk
-
-      - name: pip baÄŸÄ±mlÄ±lÄ±klarÄ±nÄ± kur
-        run: |
-          pip install --upgrade pip
-          pip install buildozer
-          pip install "cython==0.29.37"
-
-      - name: JSON dosyasÄ±nÄ± kontrol et
-        run: |
-          if [ -f "kostebek_hatlar.json" ]; then
-            echo "kostebek_hatlar.json bulundu"
-          else
-            echo "UYARI: kostebek_hatlar.json bulunamadi!"
-          fi
-
-      - name: Buildozer Ã¶nbelleÄŸi
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: buildozer-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            buildozer-
-
-      - name: Android APK derle
-        run: |
-          buildozer -v android debug
-
-      - name: APK dosyasÄ±nÄ± yÃ¼kle
-        uses: actions/upload-artifact@v4
-        with:
-          name: kostebek-ar-${{ env.APP_VERSION }}.apk
-          path: bin/*.name: KOSTEBEK-AR Build
-
-on:
+"on":
   push:
     branches: [ main ]
   pull_request:
@@ -183,4 +85,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kostebek-ar-${{ env.APP_VERSION }}.apk
-          path: bin/*.apk         
+          path: bin/*.apk
