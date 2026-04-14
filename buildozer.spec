@@ -6,9 +6,9 @@ package.domain = org.frtdesign
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 
-version = 2026.04.13
+version = 2026.04.14
 
-requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,plyer,sqlite3
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,plyer
 
 orientation = portrait
 
