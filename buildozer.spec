@@ -25,7 +25,7 @@ android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
 android.enable_androidx = True
 
-p4a.branch = develop
+p4a.branch = stable
 
 [buildozer]
 log_level = 2
