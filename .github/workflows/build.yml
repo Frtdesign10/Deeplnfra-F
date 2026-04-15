@@ -57,6 +57,8 @@ jobs:
             autoconf \
             automake \
             libtool \
+            lld \
+            clang \
             pkg-config \
             zip \
             unzip \
@@ -75,9 +77,9 @@ jobs:
           path: |
             ~/.buildozer
             .buildozer
-          key: buildozer-v2-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-v4-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-v2-
+            buildozer-v4-
 
       - name: Android APK derle
         run: |
