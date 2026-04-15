@@ -24,6 +24,7 @@ android.accept_sdk_license = True
 android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
 android.enable_androidx = True
+android.gradle_dependencies = 'com.android.tools.build:gradle:7.4.2'
 
 [buildozer]
 log_level = 2
