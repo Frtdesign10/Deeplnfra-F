@@ -18,7 +18,7 @@ android.permissions = INTERNET, CAMERA, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCA
 
 android.api = 30
 android.minapi = 21
-android.ndk = 23b
+android.ndk = 25b
 android.ndk_api = 21
 android.accept_sdk_license = True
 android.archs = arm64-v8a
