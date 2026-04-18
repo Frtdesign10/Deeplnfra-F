@@ -1,6 +1,6 @@
 name: KOSTEBEK-AR Build
 
-"on":
+on:
   push:
     branches: [ main ]
   pull_request:
@@ -12,28 +12,27 @@ jobs:
     container: kivy/buildozer:latest
 
     steps:
-      - name: Kodu cek
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Tarih bazli versiyon olustur
+      - name: Set version
         run: |
           VERSION=$(date +'%Y.%m.%d')
           echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
           sed -i "s/^version = .*/version = $VERSION/" buildozer.spec
           sed -i "s/APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
 
-      - name: Buildozer onbellegi
+      - name: Cache buildozer
         uses: actions/cache@v4
         with:
-          path: /home/user/.buildozer
+          path: /github/home/.buildozer
           key: kivy-docker-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            kivy-docker-
+          restore-keys: kivy-docker-
 
-      - name: Android APK derle
+      - name: Build APK
         run: buildozer -v android debug
 
-      - name: APK yukle
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: kostebek-ar-${{ env.APP_VERSION }}.apk
