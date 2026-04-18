@@ -6,7 +6,8 @@ package.domain = org.frtdesign
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 
-version = 2026.04.15
+version = 1.0.0
+android.numeric_version = 1
 
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,pillow,plyer
 
