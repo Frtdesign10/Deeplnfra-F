@@ -31,7 +31,7 @@ jobs:
             kivy-docker-
 
       - name: Android APK derle
-        run: buildozer android debug
+        run: buildozer -v android debug
 
       - name: APK yukle
         uses: actions/upload-artifact@v4
