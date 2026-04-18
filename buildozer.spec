@@ -14,16 +14,14 @@ orientation = portrait
 
 fullscreen = 0
 
-android.permissions = INTERNET, CAMERA, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATIONS, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
+android.permissions = INTERNET, CAMERA, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATIONS, WRITE_EXTERNAL_STORAGE
 
-android.api = 31
+android.api = 30
 android.minapi = 21
-android.ndk = 25b
+android.ndk = 23b
 android.ndk_api = 21
 android.accept_sdk_license = True
-android.archs = arm64-v8a, armeabi-v7a
-android.allow_backup = True
-android.enable_androidx = True
+android.archs = arm64-v8a
 
 [buildozer]
 log_level = 2
