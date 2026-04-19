@@ -1,10 +1,7 @@
-"""
-KOSTEBEK-AR
-GPS Tabanlı AR Altyapı Görselleştirme Sistemi
-Geliştirici: FRT Design
-"""
+APP_VERSION = "2026.04.19"
 
-APP_VERSION = "2026.04.12"
+import json, os, math, threading, time
+from datetime import datetime
 
 from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
@@ -12,639 +9,485 @@ from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.button import MDRaisedButton, MDFlatButton
 from kivymd.uix.label import MDLabel
 from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.toolbar import MDTopAppBar
-from kivymd.uix.dialog import MDDialog
 from kivymd.uix.textfield import MDTextField
-from kivy.uix.camera import Camera
 from kivy.uix.widget import Widget
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.image import Image as KivyImage
 from kivy.graphics import Line, Color, Rectangle, Ellipse
 from kivy.core.window import Window
 from kivy.clock import Clock
-import threading
-import json
-import os
-import math
 
 Window.clearcolor = (0.03, 0.03, 0.03, 1)
 
 # ─────────────────────────────────────────
-#  GPS YARDIMCI FONKSİYONLAR
+#  USERS & DATA
 # ─────────────────────────────────────────
 
-def gps_to_screen(hat_lat, hat_lon, my_lat, my_lon, screen_w, screen_h, scale=50000):
-    dlat = hat_lat - my_lat
-    dlon = hat_lon - my_lon
-    dx = dlon * 111320 * math.cos(math.radians(my_lat))
-    dy = dlat * 111320
-    px = screen_w / 2 + dx * (scale / 111320)
-    py = screen_h / 2 - dy * (scale / 111320)
-    return px, py
+USERS = {"admin": "1234", "frtdesign": "kostebek"}
 
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    R = 6371000
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlambda/2)**2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-
-
-# ─────────────────────────────────────────
-#  VERİTABANI
-# ─────────────────────────────────────────
-
-DEFAULT_HATLAR = [
-    {
-        "id": 1,
-        "name": "Ana Dogalgaz Hatti",
-        "type": "DOGALGAZ",
-        "company": "IGDAS",
-        "depth_cm": 150,
-        "pressure": "4 bar",
-        "year": 2008,
-        "coordinates": [
-            {"lat": 41.01500, "lon": 28.97900},
-            {"lat": 41.01500, "lon": 28.98200}
-        ],
-        "color": [0, 1, 1, 0.85],
-        "thickness": 8
-    },
-    {
-        "id": 2,
-        "name": "Su Ana Boru Hatti",
-        "type": "SU HATTI",
-        "company": "ISKI",
-        "depth_cm": 80,
-        "pressure": "2.5 bar",
-        "year": 2015,
-        "coordinates": [
-            {"lat": 41.01480, "lon": 28.98050},
-            {"lat": 41.01550, "lon": 28.98050}
-        ],
-        "color": [0.2, 0.5, 1, 0.85],
-        "thickness": 6
-    },
-    {
-        "id": 3,
-        "name": "Yuksek Gerilim Hatti",
-        "type": "ELEKTRIK",
-        "company": "BEDAS",
-        "depth_cm": 60,
-        "voltage": "380V",
-        "year": 2012,
-        "coordinates": [
-            {"lat": 41.01460, "lon": 28.97950},
-            {"lat": 41.01460, "lon": 28.98150}
-        ],
-        "color": [1, 0.85, 0, 0.85],
-        "thickness": 5
-    },
-    {
-        "id": 4,
-        "name": "Fiber Optik Omurga",
-        "type": "FIBER OPTIK",
-        "company": "TURK TELEKOM",
-        "depth_cm": 40,
-        "bandwidth": "10 Gbps",
-        "year": 2019,
-        "coordinates": [
-            {"lat": 41.01510, "lon": 28.97920},
-            {"lat": 41.01510, "lon": 28.98180}
-        ],
-        "color": [0.4, 1, 0.4, 0.85],
-        "thickness": 4
-    },
+DEFAULT_LINES = [
+    {"id":1,"name":"Main Gas Line","type":"GAS","company":"IGDAS",
+     "depth_cm":150,"pressure":"4 bar","year":2008,"danger_radius":50,
+     "coordinates":[{"lat":41.01500,"lon":28.97900},{"lat":41.01500,"lon":28.98200}],
+     "color":[0,1,1,0.85],"thickness":8},
+    {"id":2,"name":"Water Line","type":"WATER","company":"ISKI",
+     "depth_cm":80,"pressure":"2.5 bar","year":2015,"danger_radius":30,
+     "coordinates":[{"lat":41.01480,"lon":28.98050},{"lat":41.01550,"lon":28.98050}],
+     "color":[0.2,0.5,1,0.85],"thickness":6},
+    {"id":3,"name":"Electric Line","type":"ELECTRIC","company":"BEDAS",
+     "depth_cm":60,"voltage":"380V","year":2012,"danger_radius":40,
+     "coordinates":[{"lat":41.01460,"lon":28.97950},{"lat":41.01460,"lon":28.98150}],
+     "color":[1,0.85,0,0.85],"thickness":5},
+    {"id":4,"name":"Fiber Optic","type":"FIBER","company":"TURK TELEKOM",
+     "depth_cm":40,"bandwidth":"10Gbps","year":2019,"danger_radius":20,
+     "coordinates":[{"lat":41.01510,"lon":28.97920},{"lat":41.01510,"lon":28.98180}],
+     "color":[0.4,1,0.4,0.85],"thickness":4},
 ]
 
-DB_PATH = "/sdcard/kostebek_hatlar.json"
+DB_PATH       = "/sdcard/kostebek_lines.json"
+FAULTS_PATH   = "/sdcard/kostebek_faults.json"
+API_CFG_PATH  = "/sdcard/kostebek_api.json"
+PHOTOS_DIR    = "/sdcard/kostebek_photos/"
 
-def load_hatlar():
+def load_lines():
     try:
         if os.path.exists(DB_PATH):
-            with open(DB_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if data:
-                    return data
-    except Exception as e:
-        print("JSON yukleme hatasi:", e)
-    return list(DEFAULT_HATLAR)
+            with open(DB_PATH) as f:
+                d = json.load(f)
+                if d: return d
+    except: pass
+    return list(DEFAULT_LINES)
 
-def save_hatlar(hatlar):
+def save_lines(lines):
     try:
-        with open(DB_PATH, "w", encoding="utf-8") as f:
-            json.dump(hatlar, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        print("JSON kaydetme hatasi:", e)
-        return False
+        with open(DB_PATH,"w") as f: json.dump(lines, f, indent=2)
+    except: pass
 
-def fetch_hatlar_from_api(api_url):
+def load_faults():
     try:
-        import urllib.request
-        with urllib.request.urlopen(api_url, timeout=5) as r:
-            return json.loads(r.read().decode())
-    except Exception as e:
-        print("API hatasi:", e)
-        return None
+        if os.path.exists(FAULTS_PATH):
+            with open(FAULTS_PATH) as f: return json.load(f)
+    except: pass
+    return []
 
+def save_fault(fault):
+    faults = load_faults()
+    faults.append(fault)
+    try:
+        with open(FAULTS_PATH,"w") as f: json.dump(faults, f, indent=2)
+    except: pass
+
+def load_api_config():
+    try:
+        if os.path.exists(API_CFG_PATH):
+            with open(API_CFG_PATH) as f: return json.load(f)
+    except: pass
+    return {"url": "", "key": ""}
+
+def save_api_config(cfg):
+    try:
+        with open(API_CFG_PATH,"w") as f: json.dump(cfg, f)
+    except: pass
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = math.sin(math.radians(lat2-lat1)/2)**2 + \
+        math.cos(p1)*math.cos(p2)*math.sin(math.radians(lon2-lon1)/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+def gps_to_px(lat, lon, my_lat, my_lon, w, h, scale=50000):
+    dx = (lon-my_lon)*111320*math.cos(math.radians(my_lat))
+    dy = (lat-my_lat)*111320
+    return w/2+dx*(scale/111320), h/2-dy*(scale/111320)
+
+def line_dist(p1, p2, pt):
+    x1,y1=p1; x2,y2=p2; px,py=pt
+    dx,dy=x2-x1,y2-y1
+    if dx==0 and dy==0: return math.hypot(px-x1,py-y1)
+    t = max(0,min(1,((px-x1)*dx+(py-y1)*dy)/(dx*dx+dy*dy)))
+    return math.hypot(px-(x1+t*dx), py-(y1+t*dy))
+
+def get_nearby(lat, lon, max_dist=200):
+    result = []
+    for ln in load_lines():
+        coords = ln.get("coordinates",[])
+        dists = [haversine(lat,lon,c["lat"],c["lon"]) for c in coords]
+        if dists:
+            result.append({"line":ln,"distance":min(dists)})
+    return sorted(result, key=lambda x: x["distance"])
 
 # ─────────────────────────────────────────
-#  GPS MODÜLÜ
+#  PDF
+# ─────────────────────────────────────────
+
+def generate_pdf(lat, lon, nearby, path):
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib import colors as rcolors
+
+        doc = SimpleDocTemplate(path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        story.append(Paragraph("KOSTEBEK-AR  EXCAVATION SAFETY REPORT", styles['Title']))
+        story.append(Spacer(1,10))
+        story.append(Paragraph(f"Date/Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+        story.append(Paragraph(f"Location: {lat:.6f}, {lon:.6f}", styles['Normal']))
+        story.append(Paragraph(f"Prepared by: KOSTEBEK-AR {APP_VERSION} | FRT Design", styles['Normal']))
+        story.append(Spacer(1,16))
+        story.append(Paragraph("UNDERGROUND INFRASTRUCTURE DETECTED:", styles['Heading2']))
+        story.append(Spacer(1,6))
+
+        if nearby:
+            data = [["Type","Company","Depth(cm)","Dist(m)","Danger Zone","Safe to Dig?"]]
+            for item in nearby:
+                ln = item["line"]; dist = item["distance"]
+                radius = ln.get("danger_radius",30)
+                safe = "NO - DANGER" if dist < radius/100 else ("CAUTION" if dist < 2 else "YES")
+                data.append([ln["type"], ln.get("company",""), str(ln.get("depth_cm","?")),
+                              f"{dist:.1f}", f"{radius}cm", safe])
+            t = Table(data, colWidths=[65,80,65,55,70,65])
+            t.setStyle(TableStyle([
+                ('BACKGROUND',(0,0),(-1,0),rcolors.HexColor('#003366')),
+                ('TEXTCOLOR',(0,0),(-1,0),rcolors.white),
+                ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),
+                ('FONTSIZE',(0,0),(-1,-1),8),
+                ('ROWBACKGROUNDS',(0,1),(-1,-1),[rcolors.lightgrey,rcolors.white]),
+                ('GRID',(0,0),(-1,-1),0.3,rcolors.grey),
+                ('ALIGN',(0,0),(-1,-1),'CENTER'),
+            ]))
+            story.append(t)
+        else:
+            story.append(Paragraph("No underground infrastructure detected nearby.", styles['Normal']))
+
+        story.append(Spacer(1,16))
+        story.append(Paragraph("SAFETY RULES:", styles['Heading2']))
+        for r in [
+            "1. Never machine dig within danger radius - contact relevant company first.",
+            "2. Hand dig only within 50cm of any underground line.",
+            "3. Emergency contacts: IGDAS 187 | ISKI 185 | BEDAS 186",
+            "4. This report is valid for 24 hours from generation.",
+            "5. Always have a spotter when working near underground lines.",
+        ]:
+            story.append(Paragraph(r, styles['Normal']))
+
+        doc.build(story)
+        return True
+    except Exception as e:
+        print("PDF error:", e)
+        return False
+
+# ─────────────────────────────────────────
+#  GPS
 # ─────────────────────────────────────────
 
 class GPSManager:
     def __init__(self):
-        self.lat = 41.01500
-        self.lon = 28.98050
-        self.accuracy = 0
-        self.running = False
-        self._try_android_gps()
+        self.lat=41.01500; self.lon=28.98050; self.accuracy=0
+        Clock.schedule_once(self._start, 2)
 
-    def _try_android_gps(self):
+    def _start(self, dt):
         try:
             from android.permissions import request_permissions, Permission
-            request_permissions([Permission.ACCESS_FINE_LOCATION])
+            request_permissions([
+                Permission.ACCESS_FINE_LOCATION,
+                Permission.WRITE_EXTERNAL_STORAGE,
+                Permission.READ_EXTERNAL_STORAGE,
+                Permission.CAMERA,
+            ])
             from plyer import gps
-            self.gps = gps
-            gps.configure(on_location=self._on_location)
-            gps.start(minTime=1000, minDistance=0.5)
-            self.running = True
+            self.gps=gps
+            gps.configure(on_location=self._on_loc)
+            gps.start(minTime=1000, minDistance=1)
         except Exception as e:
-            print("GPS simulasyon modu:", e)
-            self.running = False
+            print("GPS sim:", e)
 
-    def _on_location(self, **kwargs):
-        self.lat = kwargs.get("lat", self.lat)
-        self.lon = kwargs.get("lon", self.lon)
-        self.accuracy = kwargs.get("accuracy", 0)
+    def _on_loc(self, **kw):
+        self.lat=kw.get("lat",self.lat)
+        self.lon=kw.get("lon",self.lon)
+        self.accuracy=kw.get("accuracy",0)
 
-    def get_location(self):
-        return self.lat, self.lon, self.accuracy
+    def get(self): return self.lat, self.lon, self.accuracy
 
     def stop(self):
-        try:
-            if self.running:
-                self.gps.stop()
-        except:
-            pass
-
+        try: self.gps.stop()
+        except: pass
 
 # ─────────────────────────────────────────
 #  AR OVERLAY
 # ─────────────────────────────────────────
 
 class AROverlay(Widget):
-    def __init__(self, gps_manager, **kwargs):
-        super().__init__(**kwargs)
-        self.gps = gps_manager
-        self.hatlar = load_hatlar()
-        self.touch_pos = (0, 0)
-        self.blink_state = True
-        self.danger_active = False
-        self.closest_hat = None
-        self.on_danger_change = None
-        self.on_hat_select = None
-        self.scale = 50000
-        Clock.schedule_interval(self.tick, 0.4)
-        self.bind(size=self.redraw, pos=self.redraw)
+    def __init__(self, gps, **kw):
+        super().__init__(**kw)
+        self.gps=gps; self.lines=load_lines()
+        self.touch_pos=(0,0); self.blink=True
+        self.closest=None; self.on_danger=None; self.on_select=None
+        self.scale=50000
+        Clock.schedule_interval(self._tick, 0.5)
+        self.bind(size=self._draw, pos=self._draw)
 
-    def tick(self, dt):
-        self.blink_state = not self.blink_state
-        self.redraw()
+    def _tick(self, dt): self.blink=not self.blink; self._draw()
 
-    def redraw(self, *args):
+    def _draw(self, *a):
         self.canvas.clear()
-        w, h = self.size
-        if w == 0 or h == 0:
-            return
-
-        my_lat, my_lon, accuracy = self.gps.get_location()
-        danger = False
-        closest = None
-        closest_dist = 9999
+        w,h=self.size
+        if not w or not h: return
+        my_lat,my_lon,_=self.gps.get()
+        danger=False; closest=None; cd=9999
 
         with self.canvas:
-            for hat in self.hatlar:
-                coords = hat.get("coordinates", [])
-                if len(coords) < 2:
-                    continue
-
-                for i in range(len(coords) - 1):
-                    p1 = gps_to_screen(
-                        coords[i]["lat"], coords[i]["lon"],
-                        my_lat, my_lon, w, h, self.scale
-                    )
-                    p2 = gps_to_screen(
-                        coords[i+1]["lat"], coords[i+1]["lon"],
-                        my_lat, my_lon, w, h, self.scale
-                    )
-
-                    dist = self._line_distance(p1, p2, self.touch_pos)
-                    is_close = dist < 45
-
-                    if is_close:
-                        danger = True
-                        if dist < closest_dist:
-                            closest_dist = dist
-                            closest = hat
-
-                    r, g, b, a = hat["color"]
-                    thick = hat.get("thickness", 5)
-
-                    if is_close and self.blink_state:
-                        Color(1, 0.1, 0.1, 1)
-                        Line(points=[p1[0], p1[1], p2[0], p2[1]], width=thick * 2.8)
+            for ln in self.lines:
+                coords=ln.get("coordinates",[])
+                if len(coords)<2: continue
+                for i in range(len(coords)-1):
+                    p1=gps_to_px(coords[i]["lat"],coords[i]["lon"],my_lat,my_lon,w,h,self.scale)
+                    p2=gps_to_px(coords[i+1]["lat"],coords[i+1]["lon"],my_lat,my_lon,w,h,self.scale)
+                    d=line_dist(p1,p2,self.touch_pos)
+                    near=d<45
+                    if near:
+                        danger=True
+                        if d<cd: cd=d; closest=ln
+                    r,g,b,a=ln["color"]; t=ln.get("thickness",5)
+                    if near and self.blink:
+                        Color(1,0.1,0.1,1)
+                        Line(points=[p1[0],p1[1],p2[0],p2[1]],width=t*2.5)
                     else:
-                        Color(r, g, b, a)
-                        Line(points=[p1[0], p1[1], p2[0], p2[1]], width=thick)
+                        Color(r,g,b,a)
+                        Line(points=[p1[0],p1[1],p2[0],p2[1]],width=t)
+                    mx=(p1[0]+p2[0])/2; my2=(p1[1]+p2[1])/2
+                    Color(0,0,0,0.6); Rectangle(pos=(mx-55,my2+4),size=(110,18))
 
-                    # Nokta
-                    Color(1, 1, 1, 0.5)
-                    Ellipse(pos=(p1[0]-5, p1[1]-5), size=(10, 10))
+            Color(0.2,0.6,1,1); Ellipse(pos=(w/2-10,h/2-10),size=(20,20))
+            if danger and self.blink:
+                Color(1,0,0,0.7); Line(rectangle=(3,3,w-6,h-6),width=6)
 
-                    # Etiket arka plan
-                    mid_x = (p1[0] + p2[0]) / 2
-                    mid_y = (p1[1] + p2[1]) / 2
-                    Color(0, 0, 0, 0.65)
-                    Rectangle(pos=(mid_x - 65, mid_y + 5), size=(130, 20))
-
-            # Kullanıcı konumu
-            Color(0.2, 0.6, 1, 1)
-            Ellipse(pos=(w/2 - 10, h/2 - 10), size=(20, 20))
-            Color(0.2, 0.6, 1, 0.25)
-            Ellipse(pos=(w/2 - 28, h/2 - 28), size=(56, 56))
-
-            # GPS doğruluk çemberi
-            if accuracy > 0:
-                acc_px = accuracy * (self.scale / 111320)
-                Color(0.2, 0.6, 1, 0.12)
-                Ellipse(pos=(w/2 - acc_px, h/2 - acc_px), size=(acc_px*2, acc_px*2))
-
-            # Tehlike çerçevesi
-            if danger and self.blink_state:
-                Color(1, 0, 0, 0.7)
-                Line(rectangle=(3, 3, w-6, h-6), width=7)
-
-        self.closest_hat = closest
-        self.danger_active = danger
-        if self.on_danger_change:
-            self.on_danger_change(danger, closest)
-
-    def _line_distance(self, p1, p2, point):
-        x1, y1 = p1
-        x2, y2 = p2
-        px, py = point
-        dx, dy = x2-x1, y2-y1
-        if dx == 0 and dy == 0:
-            return math.hypot(px-x1, py-y1)
-        t = max(0, min(1, ((px-x1)*dx + (py-y1)*dy) / (dx*dx + dy*dy)))
-        return math.hypot(px-(x1+t*dx), py-(y1+t*dy))
+        self.closest=closest
+        if self.on_danger: self.on_danger(danger,closest)
 
     def on_touch_move(self, touch):
-        self.touch_pos = (touch.x, touch.y - self.y)
-        self.redraw()
-        return True
+        self.touch_pos=(touch.x,touch.y-self.y); self._draw(); return True
 
     def on_touch_down(self, touch):
-        self.touch_pos = (touch.x, touch.y - self.y)
-        self.redraw()
-        if self.closest_hat and self.on_hat_select:
-            self.on_hat_select(self.closest_hat)
+        self.touch_pos=(touch.x,touch.y-self.y); self._draw()
+        if self.closest and self.on_select: self.on_select(self.closest)
         return True
 
-    def zoom_in(self):
-        self.scale = min(self.scale * 1.3, 500000)
-        self.redraw()
-
-    def zoom_out(self):
-        self.scale = max(self.scale / 1.3, 5000)
-        self.redraw()
-
-    def reload_hatlar(self):
-        self.hatlar = load_hatlar()
-        self.redraw()
-
+    def zoom_in(self): self.scale=min(self.scale*1.3,500000); self._draw()
+    def zoom_out(self): self.scale=max(self.scale/1.3,5000); self._draw()
+    def reload(self): self.lines=load_lines(); self._draw()
 
 # ─────────────────────────────────────────
-#  EKRAN 1 – AR KAMERA
+#  MAP OVERLAY (OSM Tiles + Lines)
+# ─────────────────────────────────────────
+
+class MapOverlay(Widget):
+    def __init__(self, gps, **kw):
+        super().__init__(**kw)
+        self.gps=gps; self.lines=load_lines()
+        self.blink=True; self.scale=50000
+        self.tile_textures={}
+        Clock.schedule_interval(self._tick, 0.5)
+        self.bind(size=self._draw, pos=self._draw)
+
+    def _tick(self, dt): self.blink=not self.blink; self._draw()
+
+    def _latlon_to_tile(self, lat, lon, zoom):
+        n=2**zoom
+        x=int((lon+180)/360*n)
+        y=int((1-math.log(math.tan(math.radians(lat))+1/math.cos(math.radians(lat)))/math.pi)/2*n)
+        return x,y
+
+    def _fetch_tile(self, x, y, zoom):
+        try:
+            import urllib.request
+            url=f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
+            path=f"/sdcard/kostebek_tiles/{zoom}_{x}_{y}.png"
+            os.makedirs("/sdcard/kostebek_tiles/",exist_ok=True)
+            if not os.path.exists(path):
+                headers={"User-Agent":"KOSTEBEK-AR/5.0 FRTDesign"}
+                req=urllib.request.Request(url,headers=headers)
+                with urllib.request.urlopen(req,timeout=5) as r:
+                    with open(path,"wb") as f: f.write(r.read())
+            return path
+        except Exception as e:
+            print("Tile fetch error:",e)
+            return None
+
+    def _draw(self, *a):
+        self.canvas.clear()
+        w,h=self.size
+        if not w or not h: return
+        my_lat,my_lon,acc=self.gps.get()
+
+        with self.canvas:
+            # Background map grid
+            Color(0.08,0.10,0.12,1)
+            Rectangle(pos=self.pos,size=self.size)
+
+            # Try to load OSM tile in background
+            zoom=16
+            tx,ty=self._latlon_to_tile(my_lat,my_lon,zoom)
+            tile_key=f"{zoom}_{tx}_{ty}"
+
+            if tile_key in self.tile_textures and self.tile_textures[tile_key]:
+                from kivy.core.image import Image as CoreImage
+                try:
+                    tex=CoreImage(self.tile_textures[tile_key]).texture
+                    Color(1,1,1,1)
+                    Rectangle(pos=self.pos,size=self.size,texture=tex)
+                except: pass
+            else:
+                # Grid placeholder while loading
+                Color(0.12,0.15,0.18,1)
+                for i in range(0,int(w),40):
+                    Line(points=[self.x+i,self.y,self.x+i,self.y+h],width=1)
+                for i in range(0,int(h),40):
+                    Line(points=[self.x,self.y+i,self.x+w,self.y+i],width=1)
+                if tile_key not in self.tile_textures:
+                    self.tile_textures[tile_key]=None
+                    threading.Thread(target=self._load_tile,
+                                     args=(tx,ty,zoom,tile_key),daemon=True).start()
+
+            # Underground lines overlay
+            for ln in self.lines:
+                coords=ln.get("coordinates",[])
+                if len(coords)<2: continue
+                for i in range(len(coords)-1):
+                    p1=gps_to_px(coords[i]["lat"],coords[i]["lon"],my_lat,my_lon,w,h,self.scale)
+                    p2=gps_to_px(coords[i+1]["lat"],coords[i+1]["lon"],my_lat,my_lon,w,h,self.scale)
+                    p1=(p1[0]+self.x,p1[1]+self.y)
+                    p2=(p2[0]+self.x,p2[1]+self.y)
+                    r,g,b,a=ln["color"]
+                    radius=ln.get("danger_radius",30)
+                    t=ln.get("thickness",5)
+
+                    # Danger zone (transparent band)
+                    Color(r,g,b,0.12)
+                    Line(points=[p1[0],p1[1],p2[0],p2[1]],width=radius*0.3)
+
+                    # Main line
+                    Color(r,g,b,0.9)
+                    Line(points=[p1[0],p1[1],p2[0],p2[1]],width=t)
+
+                    # Depth label
+                    mx=(p1[0]+p2[0])/2; my2=(p1[1]+p2[1])/2
+                    Color(0,0,0,0.7)
+                    Rectangle(pos=(mx-60,my2+4),size=(120,20))
+
+            # User position
+            cx=self.x+w/2; cy=self.y+h/2
+            if acc>0:
+                ap=max(acc*0.3,15)
+                Color(0.2,0.6,1,0.15)
+                Ellipse(pos=(cx-ap,cy-ap),size=(ap*2,ap*2))
+            Color(0.2,0.6,1,1); Ellipse(pos=(cx-10,cy-10),size=(20,20))
+            Color(1,1,1,1);     Ellipse(pos=(cx-4,cy-4),size=(8,8))
+
+            # Compass
+            Color(1,0.3,0.3,0.8)
+            Line(points=[cx,cy+12,cx,cy+24],width=2)
+
+    def _load_tile(self, tx, ty, zoom, key):
+        path=self._fetch_tile(tx,ty,zoom)
+        if path:
+            self.tile_textures[key]=path
+            Clock.schedule_once(lambda dt: self._draw(), 0)
+
+    def reload(self): self.lines=load_lines(); self._draw()
+    def zoom_in(self): self.scale=min(self.scale*1.3,500000); self._draw()
+    def zoom_out(self): self.scale=max(self.scale/1.3,5000); self._draw()
+
+# ─────────────────────────────────────────
+#  SCREEN: LOGIN
+# ─────────────────────────────────────────
+
+class LoginScreen(MDScreen):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.name="login"
+        root=MDBoxLayout(orientation="vertical",padding=40,spacing=16)
+        root.add_widget(MDLabel(text="KOSTEBEK-AR",halign="center",font_style="H4",
+            theme_text_color="Custom",text_color=(0,0.8,1,1)))
+        root.add_widget(MDLabel(text="Underground Infrastructure AR System",
+            halign="center",font_style="Caption",theme_text_color="Secondary"))
+        root.add_widget(MDLabel(text=f"v{APP_VERSION}  |  FRT Design",halign="center",
+            font_style="Caption",theme_text_color="Hint"))
+        self.user_f=MDTextField(hint_text="Username",mode="rectangle",
+            size_hint_y=None,height=52)
+        self.pass_f=MDTextField(hint_text="Password",mode="rectangle",
+            password=True,size_hint_y=None,height=52)
+        self.msg=MDLabel(text="",halign="center",font_style="Caption",
+            theme_text_color="Custom",text_color=(1,0.3,0.3,1),
+            size_hint_y=None,height=28)
+        root.add_widget(self.user_f); root.add_widget(self.pass_f)
+        root.add_widget(self.msg)
+        root.add_widget(MDRaisedButton(text="LOGIN",pos_hint={"center_x":0.5},
+            md_bg_color=(0,0.5,1,1),size_hint=(0.6,None),height=48,
+            on_release=self._login))
+        root.add_widget(MDFlatButton(text="Demo Mode",pos_hint={"center_x":0.5},
+            on_release=lambda x: setattr(self.manager,"current","ar")))
+        self.add_widget(root)
+
+    def _login(self, *a):
+        u=self.user_f.text.strip(); p=self.pass_f.text.strip()
+        if USERS.get(u)==p: self.msg.text=""; self.manager.current="ar"
+        else: self.msg.text="Invalid username or password!"
+
+# ─────────────────────────────────────────
+#  SCREEN: AR
 # ─────────────────────────────────────────
 
 class ARScreen(MDScreen):
-    def __init__(self, gps_manager, **kwargs):
-        super().__init__(**kwargs)
-        self.name = "ar"
-        self.gps = gps_manager
-        self.dialog = None
+    def __init__(self, gps, **kw):
+        super().__init__(**kw)
+        self.name="ar"; self.gps=gps
+        root=MDBoxLayout(orientation="vertical")
 
-        root = MDBoxLayout(orientation="vertical")
+        top=MDBoxLayout(size_hint=(1,None),height=48,padding=3,spacing=3)
+        top.add_widget(MDLabel(text=f"AR {APP_VERSION}",font_style="Caption",
+            theme_text_color="Custom",text_color=(0,0.8,1,1)))
+        for txt,dest,col in [
+            ("MAP","map",(0.1,0.4,0.2,1)),
+            ("LIST","list",(0.1,0.3,0.5,1)),
+            ("FAULT","fault",(0.5,0.1,0.1,1)),
+            ("PDF","pdf",(0.3,0.1,0.5,1)),
+            ("QR","qr",(0.1,0.3,0.3,1)),
+            ("API","apicfg",(0.3,0.3,0.1,1)),
+        ]:
+            top.add_widget(MDRaisedButton(text=txt,size_hint=(None,None),
+                size=("46dp","36dp"),md_bg_color=col,
+                on_release=lambda x,d=dest: setattr(self.manager,"current",d)))
 
-        toolbar = MDTopAppBar(
-            title=f"KOSTEBEK-AR  {APP_VERSION}",
-            right_action_items=[
-                ["database-edit", lambda x: setattr(self.manager, "current", "db")],
-                ["format-list-bulleted", lambda x: setattr(self.manager, "current", "list")],
-                ["information-outline", lambda x: setattr(self.manager, "current", "info")],
-            ]
-        )
-
-        cam_box = MDBoxLayout()
+        cam_box=MDBoxLayout()
         try:
-            self.camera = Camera(play=True, index=0, size_hint=(1, 1))
-            cam_box.add_widget(self.camera)
+            from kivy.uix.camera import Camera
+            cam=Camera(play=True,index=0,size_hint=(1,1))
+            cam_box.add_widget(cam)
         except:
-            cam_box.add_widget(MDLabel(text="[Kamera yok - Simulasyon]", halign="center"))
+            cam_box.add_widget(MDLabel(text="Simulation Mode",halign="center",
+                theme_text_color="Custom",text_color=(0.3,0.3,0.3,1)))
 
-        self.overlay = AROverlay(gps_manager=self.gps, size_hint=(1, 1))
-        self.overlay.on_danger_change = self.on_danger_change
-        self.overlay.on_hat_select = self.show_hat_info
+        self.overlay=AROverlay(gps=self.gps,size_hint=(1,1))
+        self.overlay.on_danger=self._on_danger
+        self.overlay.on_select=self._show_info
         cam_box.add_widget(self.overlay)
 
-        zoom_box = MDBoxLayout(
-            orientation="horizontal",
-            size_hint=(1, None),
-            height=50,
-            padding=8,
-            spacing=8
-        )
-        zoom_box.add_widget(MDRaisedButton(
-            text="- UZAKLAS",
-            size_hint=(0.5, 1),
-            md_bg_color=(0.1, 0.3, 0.6, 1),
-            on_release=lambda x: self.overlay.zoom_out()
-        ))
-        zoom_box.add_widget(MDRaisedButton(
-            text="+ YAKINLAS",
-            size_hint=(0.5, 1),
-            md_bg_color=(0.1, 0.3, 0.6, 1),
-            on_release=lambda x: self.overlay.zoom_in()
-        ))
+        zb=MDBoxLayout(size_hint=(1,None),height=44,padding=3,spacing=3)
+        zb.add_widget(MDRaisedButton(text="- OUT",size_hint=(0.5,1),
+            md_bg_color=(0.1,0.3,0.6,1),on_release=lambda x: self.overlay.zoom_out()))
+        zb.add_widget(MDRaisedButton(text="+ IN",size_hint=(0.5,1),
+            md_bg_color=(0.1,0.3,0.6,1),on_release=lambda x: self.overlay.zoom_in()))
 
-        self.status_bar = MDLabel(
-            text="  GPS bekleniyor...",
-            halign="left",
-            font_style="Caption",
-            theme_text_color="Custom",
-            text_color=(0.5, 1, 0.5, 1),
-            size_hint=(1, None),
-            height=28
-        )
+        self.status=MDLabel(text="  Scanning...",halign="left",font_style="Caption",
+            theme_text_color="Custom",text_color=(0.5,1,0.5,1),
+            size_hint=(1,None),height=24)
 
-        root.add_widget(toolbar)
-        root.add_widget(cam_box)
-        root.add_widget(zoom_box)
-        root.add_widget(self.status_bar)
+        root.add_widget(top); root.add_widget(cam_box)
+        root.add_widget(zb); root.add_widget(self.status)
         self.add_widget(root)
+        Clock.schedule_interval(self._upd,1)
 
-        Clock.schedule_interval(self.update_status, 1)
-
-    def update_status(self, dt):
-        lat, lon, acc = self.gps.get_location()
-        self.status_bar.text = f"  GPS: {lat:.5f}, {lon:.5f}  |  Dogruluk: {acc:.0f}m"
-
-    def on_danger_change(self, danger, hat):
-        if danger and hat:
-            self.status_bar.text = f"  !! TEHLIKE: {hat['type']} — {hat['company']} !!"
-            self.status_bar.text_color = (1, 0.1, 0.1, 1)
-        else:
-            lat, lon, acc = self.gps.get_location()
-            self.status_bar.text = f"  GPS: {lat:.5f}, {lon:.5f}  |  Dogruluk: {acc:.0f}m"
-            self.status_bar.text_color = (0.5, 1, 0.5, 1)
-
-    def show_hat_info(self, hat):
-        if self.dialog:
-            self.dialog.dismiss()
-
-        extras = []
-        for key, label in [("pressure", "Basinc"), ("voltage", "Gerilim"),
-                            ("bandwidth", "Bant Genisligi"), ("depth_cm", "Derinlik (cm)")]:
-            if key in hat:
-                extras.append(f"{label}: {hat[key]}")
-
-        my_lat, my_lon, _ = self.gps.get_location()
-        coords = hat.get("coordinates", [])
-        min_dist = None
-        if coords:
-            dists = [haversine_distance(my_lat, my_lon, c["lat"], c["lon"]) for c in coords]
-            min_dist = min(dists)
-
-        dist_text = f"Konumunuza uzaklik: {min_dist:.1f} m\n" if min_dist else ""
-
-        self.dialog = MDDialog(
-            title=f"{hat['type']}  —  {hat.get('name', '')}",
-            text=(
-                f"Firma: {hat.get('company', '—')}\n"
-                f"Yil: {hat.get('year', '—')}\n"
-                f"{chr(10).join(extras)}\n"
-                f"{dist_text}"
-            ),
-            buttons=[
-                MDFlatButton(text="KAPAT", on_release=lambda x: self.dialog.dismiss())
-            ]
-        )
-        self.dialog.open()
-
-
-# ─────────────────────────────────────────
-#  EKRAN 2 – VERİTABANI
-# ─────────────────────────────────────────
-
-class DBScreen(MDScreen):
-    def __init__(self, ar_screen, **kwargs):
-        super().__init__(**kwargs)
-        self.name = "db"
-        self.ar_screen = ar_screen
-
-        root = MDBoxLayout(orientation="vertical")
-        toolbar = MDTopAppBar(
-            title="VERITABANI",
-            left_action_items=[["arrow-left", lambda x: setattr(self.manager, "current", "ar")]]
-        )
-
-        layout = MDBoxLayout(orientation="vertical", padding=20, spacing=14)
-
-        lbl = MDLabel(
-            text="JSON dosyasindan yukle veya API'den cek",
-            halign="center",
-            font_style="Body2",
-            theme_text_color="Secondary",
-            size_hint_y=None,
-            height=50
-        )
-
-        self.api_field = MDTextField(
-            hint_text="API URL girin",
-            mode="rectangle",
-            size_hint_y=None,
-            height=52
-        )
-
-        layout.add_widget(lbl)
-        layout.add_widget(self.api_field)
-
-        for text, color, fn in [
-            ("API'DEN CEK", (0.1, 0.5, 0.9, 1), self.fetch_api),
-            ("JSON DOSYASINDAN YUKLE", (0.1, 0.6, 0.3, 1), self.load_json),
-            ("VARSAYILAN VERILERI YUKLE", (0.4, 0.2, 0.6, 1), self.load_defaults),
-        ]:
-            layout.add_widget(MDRaisedButton(
-                text=text,
-                pos_hint={"center_x": 0.5},
-                md_bg_color=color,
-                on_release=fn
-            ))
-
-        self.result_label = MDLabel(
-            text="",
-            halign="center",
-            font_style="Caption",
-            theme_text_color="Secondary"
-        )
-        layout.add_widget(self.result_label)
-        root.add_widget(toolbar)
-        root.add_widget(layout)
-        self.add_widget(root)
-
-    def fetch_api(self, instance):
-        url = self.api_field.text.strip()
-        if not url:
-            self.result_label.text = "API URL giriniz!"
-            return
-        self.result_label.text = "Cekiliyor..."
-        threading.Thread(target=self._do_fetch, args=(url,), daemon=True).start()
-
-    def _do_fetch(self, url):
-        data = fetch_hatlar_from_api(url)
-        if data:
-            save_hatlar(data)
-            self.ar_screen.overlay.reload_hatlar()
-            Clock.schedule_once(lambda dt: setattr(
-                self.result_label, "text", f"Basarili! {len(data)} hat yuklendi."), 0)
-        else:
-            Clock.schedule_once(lambda dt: setattr(
-                self.result_label, "text", "API hatasi!"), 0)
-
-    def load_json(self, instance):
-        data = load_hatlar()
-        self.ar_screen.overlay.reload_hatlar()
-        self.result_label.text = f"JSON'dan {len(data)} hat yuklendi."
-
-    def load_defaults(self, instance):
-        save_hatlar(DEFAULT_HATLAR)
-        self.ar_screen.overlay.reload_hatlar()
-        self.result_label.text = f"Varsayilan {len(DEFAULT_HATLAR)} hat yuklendi."
-
-
-# ─────────────────────────────────────────
-#  EKRAN 3 – HAT LİSTESİ
-# ─────────────────────────────────────────
-
-class ListScreen(MDScreen):
-    def __init__(self, gps_manager, **kwargs):
-        super().__init__(**kwargs)
-        self.name = "list"
-        self.gps = gps_manager
-
-        root = MDBoxLayout(orientation="vertical")
-        toolbar = MDTopAppBar(
-            title="ALTYAPI HATLARI",
-            left_action_items=[["arrow-left", lambda x: setattr(self.manager, "current", "ar")]]
-        )
-
-        self.layout = MDBoxLayout(orientation="vertical", padding=20, spacing=10)
-        root.add_widget(toolbar)
-        root.add_widget(self.layout)
-        self.add_widget(root)
-        self.bind(on_pre_enter=self.refresh)
-
-    def refresh(self, *args):
-        self.layout.clear_widgets()
-        hatlar = load_hatlar()
-        my_lat, my_lon, _ = self.gps.get_location()
-
-        for hat in hatlar:
-            coords = hat.get("coordinates", [])
-            dists = [haversine_distance(my_lat, my_lon, c["lat"], c["lon"]) for c in coords]
-            min_dist = min(dists) if dists else 0
-            r, g, b, a = hat["color"]
-
-            self.layout.add_widget(MDLabel(
-                text=(
-                    f"[b]{hat['type']}[/b]  —  {hat.get('company', '—')}\n"
-                    f"Derinlik: {hat.get('depth_cm','—')} cm  |  Uzaklik: {min_dist:.0f} m"
-                ),
-                markup=True,
-                halign="left",
-                font_style="Body2",
-                theme_text_color="Custom",
-                text_color=(r, g, b, 1),
-                size_hint_y=None,
-                height=56
-            ))
-
-
-# ─────────────────────────────────────────
-#  EKRAN 4 – HAKKINDA
-# ─────────────────────────────────────────
-
-class InfoScreen(MDScreen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.name = "info"
-
-        root = MDBoxLayout(orientation="vertical")
-        toolbar = MDTopAppBar(
-            title="HAKKINDA",
-            left_action_items=[["arrow-left", lambda x: setattr(self.manager, "current", "ar")]]
-        )
-
-        layout = MDBoxLayout(orientation="vertical", padding=30, spacing=10)
-        layout.add_widget(MDLabel(
-            text=(
-                f"[b]KOSTEBEK-AR[/b]\n"
-                f"Surum: {APP_VERSION}\n\n"
-                "Gelistirici: FRT Design\n\n"
-                "GPS tabanli AR altyapi gorselleştirme.\n"
-                "Yeralti hatlarini gercek zamanli haritalar.\n\n"
-                "[b]Desteklenen Hatlar:[/b]\n"
-                "Dogalgaz / Su / Elektrik / Fiber Optik\n\n"
-                "[b]Yakinda:[/b]\n"
-                "PDF rapor / QR kod / Ariza kayit\n\n"
-                "c 2026 FRT Design"
-            ),
-            markup=True,
-            halign="center",
-            font_style="Body2",
-            theme_text_color="Secondary"
-        ))
-        root.add_widget(toolbar)
-        root.add_widget(layout)
-        self.add_widget(root)
-
-
-# ─────────────────────────────────────────
-#  ANA UYGULAMA
-# ─────────────────────────────────────────
-
-class KostebekARApp(MDApp):
-    def build(self):
-        self.theme_cls.primary_palette = "Blue"
-        self.theme_cls.theme_style = "Dark"
-        Window.clearcolor = (0.03, 0.03, 0.03, 1)
-
-        self.gps = GPSManager()
-        sm = MDScreenManager()
-        ar = ARScreen(gps_manager=self.gps)
-        db = DBScreen(ar_screen=ar)
-        sm.add_widget(ar)
-        sm.add_widget(db)
-        sm.add_widget(ListScreen(gps_manager=self.gps))
-        sm.add_widget(InfoScreen())
-        return sm
-
-    def on_stop(self):
-        self.gps.stop()
-
-
-if __name__ == "__main__":
-    KostebekARApp().run()
+    def _upd(self,
