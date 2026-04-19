@@ -622,4 +622,29 @@ class InfoScreen(MDScreen):
         self.add_widget(root)
 
 
-# ──
+# ─────────────────────────────────────────
+#  ANA UYGULAMA
+# ─────────────────────────────────────────
+
+class KostebekARApp(MDApp):
+    def build(self):
+        self.theme_cls.primary_palette = "Blue"
+        self.theme_cls.theme_style = "Dark"
+        Window.clearcolor = (0.03, 0.03, 0.03, 1)
+
+        self.gps = GPSManager()
+        sm = MDScreenManager()
+        ar = ARScreen(gps_manager=self.gps)
+        db = DBScreen(ar_screen=ar)
+        sm.add_widget(ar)
+        sm.add_widget(db)
+        sm.add_widget(ListScreen(gps_manager=self.gps))
+        sm.add_widget(InfoScreen())
+        return sm
+
+    def on_stop(self):
+        self.gps.stop()
+
+
+if __name__ == "__main__":
+    KostebekARApp().run()
